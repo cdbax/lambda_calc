@@ -6,6 +6,7 @@ import Parser exposing (..)
 type Expr
     = Variable Char
     | Head Char Expr
+    | Group Expr
 
 
 parseExpr : Parser Expr
@@ -13,6 +14,7 @@ parseExpr =
     succeed identity
         |= oneOf
             [ lazy (\_ -> parseHead) |> log "parseHead"
+            , lazy (\_ -> parseGroup) |> log "parseGroup"
             , parseVariable |> log "parseVariable"
             ]
 
@@ -30,6 +32,14 @@ parseHead =
         |= parseChar
         |. symbol "."
         |= parseExpr
+
+
+parseGroup : Parser Expr
+parseGroup =
+    succeed Group
+        |. symbol "("
+        |= parseExpr
+        |. symbol ")"
 
 
 parseChar : Parser Char
