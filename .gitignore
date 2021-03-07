@@ -1,1 +1,5 @@
+# Ignore Elm build files
 elm-stuff/
+
+# Ignore vim temporary files
+*.swp
