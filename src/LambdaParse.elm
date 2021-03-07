@@ -7,15 +7,39 @@ type Expr
     = Variable Char
     | Head Char Expr
     | Group Expr
+    | Chain ( Expr, Expr )
 
 
 parseExpr : Parser Expr
 parseExpr =
     succeed identity
         |= oneOf
-            [ lazy (\_ -> parseHead) |> log "parseHead"
+            [ backtrackable (lazy (\_ -> parseChain) |> log "parseChain")
+            , lazy (\_ -> parseHead) |> log "parseHead"
             , lazy (\_ -> parseGroup) |> log "parseGroup"
             , parseVariable |> log "parseVariable"
+            ]
+
+
+parseChain : Parser Expr
+parseChain =
+    let
+        parsePair =
+            succeed Tuple.pair
+                |= parseChainStart
+                |. spaces
+                |= parseExpr
+    in
+    map Chain parsePair
+
+
+parseChainStart : Parser Expr
+parseChainStart =
+    succeed identity
+        |= oneOf
+            [ lazy (\_ -> parseHead) |> log "chainStart -> parseHead"
+            , lazy (\_ -> parseGroup) |> log "chainStart -> parseGroup"
+            , parseVariable |> log "chainStart -> parseVariable"
             ]
 
 
