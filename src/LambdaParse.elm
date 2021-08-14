@@ -1,69 +1,93 @@
-module LambdaParse exposing (..)
+module LambdaParse exposing (Term(..), parseTerm)
 
 import Parser exposing (..)
+import Set exposing (Set, fromList)
 
 
-type Expr
+type Term
     = Variable Char
-    | Head Char Expr
-    | Group Expr
-    | Chain ( Expr, Expr )
+    | Abstraction (Set Char) Term
+    | Group Term
+    | Application Term Term
 
 
-parseExpr : Parser Expr
-parseExpr =
+parseTerm : Parser Term
+parseTerm =
     succeed identity
         |= oneOf
-            [ backtrackable (lazy (\_ -> parseChain) |> log "parseChain")
-            , lazy (\_ -> parseHead) |> log "parseHead"
-            , lazy (\_ -> parseGroup) |> log "parseGroup"
-            , parseVariable |> log "parseVariable"
+            [ backtrackable (lazy (\_ -> parseApplication))
+            , lazy (\_ -> parseAbstraction)
+            , lazy (\_ -> parseGroup)
+            , parseVariable
             ]
 
 
-parseChain : Parser Expr
-parseChain =
-    let
-        parsePair =
-            succeed Tuple.pair
-                |= parseChainStart
-                |. spaces
-                |= parseExpr
-    in
-    map Chain parsePair
+parseApplication : Parser Term
+parseApplication =
+    succeed Application
+        |= parseApplicationStart
+        |. spaces
+        |= parseTerm
 
 
-parseChainStart : Parser Expr
-parseChainStart =
+
+{-
+   If we allowed parseApplication to have any type of Term as its first value,
+   it would be allowed to have an Application, and would end in an infinite
+   loop of Application Terms. By forcing the first term to be something concrete
+   we avoid this.
+-}
+
+
+parseApplicationStart : Parser Term
+parseApplicationStart =
     succeed identity
         |= oneOf
-            [ lazy (\_ -> parseHead) |> log "chainStart -> parseHead"
-            , lazy (\_ -> parseGroup) |> log "chainStart -> parseGroup"
-            , parseVariable |> log "chainStart -> parseVariable"
+            [ lazy (\_ -> parseAbstraction)
+            , lazy (\_ -> parseGroup)
+            , parseVariable
             ]
 
 
-parseVariable : Parser Expr
+parseAbstraction : Parser Term
+parseAbstraction =
+    succeed Abstraction
+        |. symbol "λ"
+        |= parseCharSet
+        |. symbol "."
+        |= parseTerm
+
+
+parseGroup : Parser Term
+parseGroup =
+    succeed Group
+        |. symbol "("
+        |= parseTerm
+        |. symbol ")"
+
+
+parseVariable : Parser Term
 parseVariable =
     succeed Variable
         |= parseChar
 
 
-parseHead : Parser Expr
-parseHead =
-    succeed Head
-        |. symbol "λ"
-        |= parseChar
-        |. symbol "."
-        |= parseExpr
+parseCharSet : Parser (Set Char)
+parseCharSet =
+    let
+        setFromList list =
+            case list of
+                [] ->
+                    problem "Empty list"
 
-
-parseGroup : Parser Expr
-parseGroup =
-    succeed Group
-        |. symbol "("
-        |= parseExpr
-        |. symbol ")"
+                _ ->
+                    succeed <| Set.fromList list
+    in
+    succeed ()
+        |. chompWhile Char.isLower
+        |> getChompedString
+        |> map (\s -> String.toList s)
+        |> andThen setFromList
 
 
 parseChar : Parser Char
@@ -89,10 +113,6 @@ log message parser =
     succeed ()
         |> andThen
             (\() ->
-                let
-                    _ =
-                        Debug.log "starting" message
-                in
                 succeed
                     (\source offsetBefore parseResult offsetAfter ->
                         let
