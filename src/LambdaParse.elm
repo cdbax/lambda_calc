@@ -12,13 +12,12 @@ type Term
 
 parseTerm : Parser Term
 parseTerm =
-    succeed identity
-        |= oneOf
-            [ backtrackable (lazy (\_ -> parseApplication))
-            , lazy (\_ -> parseAbstraction)
-            , lazy (\_ -> parseGroup)
-            , parseVariable
-            ]
+    oneOf
+        [ backtrackable (lazy (\_ -> parseApplication))
+        , lazy (\_ -> parseAbstraction)
+        , lazy (\_ -> parseGroup)
+        , parseVariable
+        ]
 
 
 parseApplication : Parser Term
@@ -40,12 +39,11 @@ parseApplication =
 
 parseApplicationStart : Parser Term
 parseApplicationStart =
-    succeed identity
-        |= oneOf
-            [ lazy (\_ -> parseAbstraction)
-            , lazy (\_ -> parseGroup)
-            , parseVariable
-            ]
+    oneOf
+        [ lazy (\_ -> parseAbstraction)
+        , lazy (\_ -> parseGroup)
+        , parseVariable
+        ]
 
 
 parseAbstraction : Parser Term
