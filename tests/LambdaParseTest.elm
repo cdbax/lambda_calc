@@ -23,21 +23,28 @@ suite =
                 \_ ->
                     let
                         expression =
-                            Ok (Abstraction (Set.fromList [ 'x' ]) (Variable 'x'))
+                            Ok (Abstraction 'x' (Variable 'x'))
                     in
                     Expect.equal expression (run LambdaParse.parseTerm "λx.x")
             , test "parses True abstraction" <|
                 \_ ->
                     let
                         expression =
-                            Ok (Abstraction (Set.fromList [ 'x', 'y' ]) (Variable 'x'))
+                            Ok (Abstraction 'x' (Abstraction 'y' (Variable 'x')))
+                    in
+                    Expect.equal expression (run LambdaParse.parseTerm "λx.λy.x")
+            , test "parses shortcut notation for True abstraction" <|
+                \_ ->
+                    let
+                        expression =
+                            Ok (Abstraction 'x' (Abstraction 'y' (Variable 'x')))
                     in
                     Expect.equal expression (run LambdaParse.parseTerm "λxy.x")
             , test "parses infinite loop" <|
                 \_ ->
                     let
                         expression =
-                            Ok (Application (Group (Abstraction (Set.fromList [ 'x' ]) (Application (Variable 'x') (Variable 'x')))) (Group (Abstraction (Set.fromList [ 'x' ]) (Application (Variable 'x') (Variable 'x')))))
+                            Ok (Application (Group (Abstraction 'x' (Application (Variable 'x') (Variable 'x')))) (Group (Abstraction 'x' (Application (Variable 'x') (Variable 'x')))))
                     in
                     Expect.equal expression (run LambdaParse.parseTerm "(λx.xx)(λx.xx)")
             ]

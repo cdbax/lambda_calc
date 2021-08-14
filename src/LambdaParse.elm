@@ -1,12 +1,11 @@
 module LambdaParse exposing (Term(..), parseTerm)
 
 import Parser exposing (..)
-import Set exposing (Set, fromList)
 
 
 type Term
     = Variable Char
-    | Abstraction (Set Char) Term
+    | Abstraction Char Term
     | Group Term
     | Application Term Term
 
@@ -53,9 +52,25 @@ parseAbstraction : Parser Term
 parseAbstraction =
     succeed Abstraction
         |. symbol "λ"
-        |= parseCharSet
-        |. symbol "."
-        |= parseTerm
+        |= parseChar
+        |= parseAbstractionTail
+
+
+parseAbstractionTail : Parser Term
+parseAbstractionTail =
+    oneOf
+        [ succeed identity
+            |. symbol "."
+            |= parseTerm
+        , lazy (\_ -> parseShorthandAbstraction)
+        ]
+
+
+parseShorthandAbstraction : Parser Term
+parseShorthandAbstraction =
+    succeed Abstraction
+        |= parseChar
+        |= parseAbstractionTail
 
 
 parseGroup : Parser Term
@@ -70,24 +85,6 @@ parseVariable : Parser Term
 parseVariable =
     succeed Variable
         |= parseChar
-
-
-parseCharSet : Parser (Set Char)
-parseCharSet =
-    let
-        setFromList list =
-            case list of
-                [] ->
-                    problem "Empty list"
-
-                _ ->
-                    succeed <| Set.fromList list
-    in
-    succeed ()
-        |. chompWhile Char.isLower
-        |> getChompedString
-        |> map (\s -> String.toList s)
-        |> andThen setFromList
 
 
 parseChar : Parser Char
