@@ -13,9 +13,9 @@ type Term
 parseTerm : Parser Term
 parseTerm =
     oneOf
-        [ backtrackable (lazy (\_ -> parseApplication))
-        , lazy (\_ -> parseAbstraction)
-        , lazy (\_ -> parseGroup)
+        [ backtrackable parseApplication
+        , parseAbstraction
+        , parseGroup
         , parseVariable
         ]
 
@@ -25,7 +25,7 @@ parseApplication =
     succeed Application
         |= parseApplicationStart
         |. spaces
-        |= parseTerm
+        |= lazy (\_ -> parseTerm)
 
 
 
@@ -40,8 +40,8 @@ parseApplication =
 parseApplicationStart : Parser Term
 parseApplicationStart =
     oneOf
-        [ lazy (\_ -> parseAbstraction)
-        , lazy (\_ -> parseGroup)
+        [ parseAbstraction
+        , parseGroup
         , parseVariable
         ]
 
@@ -59,8 +59,8 @@ parseAbstractionTail =
     oneOf
         [ succeed identity
             |. symbol "."
-            |= parseTerm
-        , lazy (\_ -> parseShorthandAbstraction)
+            |= lazy (\_ -> parseTerm)
+        , parseShorthandAbstraction
         ]
 
 
@@ -68,14 +68,14 @@ parseShorthandAbstraction : Parser Term
 parseShorthandAbstraction =
     succeed Abstraction
         |= parseChar
-        |= parseAbstractionTail
+        |= lazy (\_ -> parseAbstractionTail)
 
 
 parseGroup : Parser Term
 parseGroup =
     succeed Group
         |. symbol "("
-        |= parseTerm
+        |= lazy (\_ -> parseTerm)
         |. symbol ")"
 
 
