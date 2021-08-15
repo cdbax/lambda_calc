@@ -40,6 +40,13 @@ suite =
                             Ok (Abstraction 'x' (Abstraction 'y' (Variable 'x')))
                     in
                     Expect.equal expression (run LambdaParse.parseTerm "λxy.x")
+            , test "parses shortcut notation for pair abstraction" <|
+                \_ ->
+                    let
+                        expression =
+                            Ok (Abstraction 'x' (Abstraction 'y' (Abstraction 'z' (Application (Variable 'z') (Application (Variable 'x') (Variable 'y'))))))
+                    in
+                    Expect.equal expression (run LambdaParse.parseTerm "λxyz.zxy")
             , test "parses infinite loop" <|
                 \_ ->
                     let
