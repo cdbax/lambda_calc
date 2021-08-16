@@ -33,14 +33,14 @@ termLoop reversedTerms =
 foldApplications : List Term -> Parser Term
 foldApplications termsList =
     case termsList of
-        [] ->
-            problem "Somehow got an empty list in foldApplications"
-
-        t :: [] ->
+        [ t ] ->
             succeed t
 
         t :: rest ->
             succeed (List.foldl (\a b -> Application b a) t rest)
+
+        [] ->
+            problem "Somehow got an empty list in foldApplications"
 
 
 parseAbstraction : Parser Term
