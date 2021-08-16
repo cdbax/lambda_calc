@@ -11,3 +11,9 @@ When parsing a Term, we want to start by seeing if the Term can be an Applicatio
 I thought I had this solved, by requiring the first term to be something concrete (ie. not Application), I avoid the infinite Application loop, and my parser started working. Then I started work on performing β-reduction on the parsed term, and realised I have a new problem.
 
 Starting with the term `(λxyz.zxy)ab` as a simple test for β-reduction, I realised that the parsed result isn't really representing things properly. Ideally, we'd have `a` being applied to `(λxyz.zxy)` and then `b` being applied next, but instead, because of the way I solved the infinite loop problem, I have `b` being applied to `a` and then that Application being applied to `λxyz.zxy`. To get it to look the way I want, I need to find a way for Application to allow Application as a first term, but avoid the infinite loop.
+
+### Solution to infinite call stack
+
+The solution to this was to change to a 2 step process. First we build a list of terms that have been successfully parsed, and then we process that list to build Application terms if applicable. Obviously we don't need an Application term if the list only held a single value.
+
+TODO: write this up properly

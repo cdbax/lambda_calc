@@ -12,38 +12,35 @@ type Term
 
 parseTerm : Parser Term
 parseTerm =
+    loop [] termLoop
+        |> andThen foldApplications
+
+
+termLoop : List Term -> Parser (Step (List Term) (List Term))
+termLoop reversedTerms =
     oneOf
-        [ backtrackable parseApplication
-        , parseAbstraction
-        , parseGroup
-        , parseVariable
+        [ succeed (\term -> Loop (term :: reversedTerms))
+            |= oneOf
+                [ parseAbstraction
+                , parseGroup
+                , parseVariable
+                ]
+        , succeed ()
+            |> map (\_ -> Done (List.reverse reversedTerms))
         ]
 
 
-parseApplication : Parser Term
-parseApplication =
-    succeed Application
-        |= parseApplicationStart
-        |. spaces
-        |= lazy (\_ -> parseTerm)
+foldApplications : List Term -> Parser Term
+foldApplications termsList =
+    case termsList of
+        [] ->
+            problem "Somehow got an empty list in foldApplications"
 
+        t :: [] ->
+            succeed t
 
-
-{-
-   If we allowed parseApplication to have any type of Term as its first value,
-   it would be allowed to have an Application, and would end in an infinite
-   loop of Application Terms. By forcing the first term to be something concrete
-   we avoid this.
--}
-
-
-parseApplicationStart : Parser Term
-parseApplicationStart =
-    oneOf
-        [ parseAbstraction
-        , parseGroup
-        , parseVariable
-        ]
+        t :: rest ->
+            succeed (List.foldl (\a b -> Application b a) t rest)
 
 
 parseAbstraction : Parser Term
@@ -101,32 +98,3 @@ parseChar =
         |> getChompedString
         |> map (\s -> String.uncons s)
         |> andThen charFromMaybe
-
-
-log : String -> Parser a -> Parser a
-log message parser =
-    succeed ()
-        |> andThen
-            (\() ->
-                succeed
-                    (\source offsetBefore parseResult offsetAfter ->
-                        let
-                            _ =
-                                Debug.log "-----------------------------------------------" message
-
-                            _ =
-                                Debug.log "source         " source
-
-                            _ =
-                                Debug.log "chomped string " (String.slice offsetBefore offsetAfter source)
-
-                            _ =
-                                Debug.log "parsed result  " parseResult
-                        in
-                        parseResult
-                    )
-                    |= getSource
-                    |= getOffset
-                    |= parser
-                    |= getOffset
-            )
