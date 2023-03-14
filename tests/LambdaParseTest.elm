@@ -62,4 +62,13 @@ suite =
                     in
                     Expect.equal expression (run LambdaParse.parseTerm "(λx.xx)(λx.xx)")
             ]
+        , describe "LambdaParse.termToString"
+            [ test "converts Ω" <|
+                \_ ->
+                    let
+                        expression =
+                            Application (Group (Abstraction 'x' (Application (Variable 'x') (Variable 'x')))) (Group (Abstraction 'x' (Application (Variable 'x') (Variable 'x'))))
+                    in
+                    Expect.equal "(λx.xx)(λx.xx)" (LambdaParse.termToString expression)
+            ]
         ]

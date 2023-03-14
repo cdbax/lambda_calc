@@ -1,4 +1,4 @@
-module LambdaParse exposing (Term(..), parseTerm)
+module LambdaParse exposing (Term(..), parseTerm, termToString)
 
 import Parser exposing (..)
 
@@ -14,6 +14,22 @@ parseTerm : Parser Term
 parseTerm =
     loop [] termLoop
         |> andThen foldApplications
+
+
+termToString : Term -> String
+termToString term =
+    case term of
+        Variable char ->
+            String.fromChar char
+
+        Abstraction char abstractedTerm ->
+            "λ" ++ String.fromChar char ++ "." ++ termToString abstractedTerm
+
+        Group groupedTerm ->
+            "(" ++ termToString groupedTerm ++ ")"
+
+        Application termA termB ->
+            termToString termA ++ termToString termB
 
 
 termLoop : List Term -> Parser (Step (List Term) (List Term))
@@ -40,7 +56,7 @@ foldApplications termsList =
             succeed (List.foldl (\a b -> Application b a) t rest)
 
         [] ->
-            problem "Somehow got an empty list in foldApplications"
+            problem "Unable to match any lambda calculus terms"
 
 
 parseAbstraction : Parser Term
